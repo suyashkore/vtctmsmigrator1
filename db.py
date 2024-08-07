@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, MetaData, Table
-from sqlalchemy.orm import sessionmaker
-import yaml
+from sqlalchemy import create_engine, MetaData, Table # type: ignore
+from sqlalchemy.orm import sessionmaker # type: ignore
+import yaml # type: ignore
 
 def load_config():
     with open('config.yaml', 'r') as file:

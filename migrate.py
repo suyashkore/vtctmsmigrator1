@@ -1,4 +1,4 @@
-from sqlalchemy import insert, text
+from sqlalchemy import insert, text # type: ignore
 from db import source_session, target_session
 from mappings import TABLE_MAPPINGS
 

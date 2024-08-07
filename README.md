@@ -11,10 +11,13 @@ python3 -m venv venv
 
 ### On Windows:
 venv\Scripts\activate
-### On macOS and Linux:
-source venv/bin/activate
 ### Install dependencies
 pip install -r requirements.txt
 ### How to run
-python3 cli.py migrate --table Customers
+python cli.py migrate --table Customers
+#### How To Run All Table 
+python cli.py migrate --table all
+#### l Check
+pip list
+
 
