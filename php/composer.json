@@ -1,0 +1,11 @@
+{
+    "require": {
+        "illuminate/support": "^11.10",
+        "illuminate/hashing": "^11.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        }
+    }
+}

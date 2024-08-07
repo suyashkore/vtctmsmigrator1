@@ -1,7 +1,11 @@
 from db import get_table, target_engine
 from datetime import datetime
-import bcrypt # type: ignore
+import subprocess  # For calling the PHP script
 
+def call_php_for_hash(password):
+    """ Calls a PHP script to hash the password using Laravel's Hash::make """
+    result = subprocess.run(['php', 'php/hash_password.php', password], capture_output=True, text=True)
+    return result.stdout.strip()
 
 def map_customers(source_row):
     erp_entry_date = source_row.CreateDate
@@ -12,17 +16,12 @@ def map_customers(source_row):
     mobile = source_row.MobileNo[:10]
     billing_mobile = source_row.MobileNo[:10]
 
-    # Truncate tel_num to a length that fits the database schema (assuming a max length of 20 for this example)
-    
-
     return {
-        # 'parent_id': source_row.GroupCode,
         'code': source_row.CustCode,
         'name': source_row.CustName,
         'payment_types': source_row.Category,
         'name_reg': source_row.CustNameMar,
         'industry_type': source_row.IndType,
-        # 'pan_num': source_row.PAN,
         'city': source_row.City,
         'pincode': source_row.Pincode,
         'address': source_row.Address,
@@ -42,7 +41,6 @@ def map_customers(source_row):
         # Add other fields as necessary
     }
 
-
 def map_driver_master(source_row):
     return {
         'vendor_name': source_row.DName,
@@ -50,13 +48,13 @@ def map_driver_master(source_row):
         'default_rate_type': 'HOURLY',
         'status': 'CREATED',
         'start_date': '2024-07-30 00:00:00',
-        'end_date': '2024-12-31 23:59:59',  
+        'end_date': '2024-12-31 23:59:59',
     }
 
 def map_offices(source_row):
     return {
         'code': source_row.CPCODE,
-         'name': source_row.NAME,  # Assuming the city name can be used as the office name
+        'name': source_row.NAME,  # Assuming the city name can be used as the office name
         'district': source_row.CPDistrict,
         'taluka': source_row.cptaluka,
         'city': source_row.cpdeponame,
@@ -64,24 +62,9 @@ def map_offices(source_row):
         'latitude': source_row.Lattitude,
         'longitude': source_row.Longitude,
         'address': source_row.cpaddress,
-        'active': source_row.Active, 
-        'o_type':'HUB',
+        'active': source_row.Active,
+        'o_type': 'HUB',
     }
-
-# def map_offices(source_row):
-#     return {
-#         'code': source_row.CPCODE,
-#          'name': '.',  # Assuming the city name can be used as the office name
-#         'district': '.',
-#         'taluka': '.',
-#         'city': source_row.DEPO_NAME,
-#         'pincode': '.',
-#         'latitude': '.',
-#         'longitude': '.',
-#         'address': '.',
-#         'active': source_row.Status, 
-#         'o_type':'HUB',
-#     }
 
 def map_vehicles(source_row):
     rc_num = source_row.RCBookNo
@@ -108,44 +91,34 @@ def map_vehicles(source_row):
         'base_office_id': '1',
     }
 
-
 def map_vendors(source_row):
     return {
         'code': source_row.VendorCode,
-        'name': source_row.VendorName, 
-        'mobile': source_row.Mobile_No, 
-        'email': source_row.Email, 
-        'active': source_row.ActiveFlag, 
-        'contracting_office_id':'1',
-        'v_type':'OTHERS'
+        'name': source_row.VendorName,
+        'mobile': source_row.Mobile_No,
+        'email': source_row.Email,
+        'active': source_row.ActiveFlag,
+        'contracting_office_id': '1',
+        'v_type': 'OTHERS'
     }
-
 
 def map_station_coverage(source_row):
     return {
         'name': source_row.CityNameEng,
-        'name_reg': source_row.CityNameMar, 
-        'pincode': source_row.Pincode, 
-        'taluka': source_row.Taluka, 
-        'district': source_row.District or '', 
+        'name_reg': source_row.CityNameMar,
+        'pincode': source_row.Pincode,
+        'taluka': source_row.Taluka,
+        'district': source_row.District or '',
         'district_reg': source_row.DistrictMar,
         'state': source_row.State if source_row.State else 'Unknown',  # Provide a default value
         'latitude': source_row.Latitude,
-        'longitude': source_row.Longitude, 
-        'route_num': source_row.RouteNo, 
+        'longitude': source_row.Longitude,
+        'route_num': source_row.RouteNo,
         'active': source_row.Active,
         'status': 'CREATED',
-        'country': 'India', 
+        'country': 'India',
         'servicing_office_id': 1
     }
-
-
-def hash_password(password):
-    """ Hashes the password using bcrypt. """
-    if not password:
-        return None
-    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-    return hashed.decode('utf-8')
 
 def map_users(source_row):
     max_job_title_length = 32  # Adjust this value based on your schema
@@ -153,56 +126,42 @@ def map_users(source_row):
 
     return {
         'name': source_row.FullName,
-        'login_id': source_row.Name, 
-        'mobile': source_row.UserMobile, 
-        'email': source_row.UserEmail, 
-        'password_hash': hash_password(source_row.Password),  # Hash the password
+        'login_id': source_row.Name,
+        'mobile': source_row.UserMobile,
+        'email': source_row.UserEmail,
+        'password_hash': call_php_for_hash(source_row.Password),  # Hash the password using PHP script
         'profile_pic_url': source_row.imageurl,
-        'user_type': 'TENANT', 
+        'user_type': 'TENANT',
         'job_title': job_title,  # Use truncated job title
         'active': source_row.ActiveFlag,
     }
-
-
-
 
 TABLE_MAPPINGS = {
     'Customers': {
         'target_table': get_table(target_engine, 'customers'),
         'mapping_function': map_customers
     },
-
     'DriverMaster': {
         'target_table': get_table(target_engine, 'driver_rates'),
         'mapping_function': map_driver_master
     },
-
     'CPDEPO': {
         'target_table': get_table(target_engine, 'offices'),
         'mapping_function': map_offices
     },
-
-    #   'CPAll_Depo': {
-    #     'target_table': get_table(target_engine, 'offices'),
-    #     'mapping_function': map_offices
-    # },
-
     'Vehicle': {
         'target_table': get_table(target_engine, 'vehicles'),
         'mapping_function': map_vehicles
     },
-
     'Vendor': {
         'target_table': get_table(target_engine, 'vendors'),
         'mapping_function': map_vendors
     },
-
     'CityMaster': {
         'target_table': get_table(target_engine, 'station_coverage'),
         'mapping_function': map_station_coverage
     },
-
- 'users': {
+    'users': {
         'target_table': get_table(target_engine, 'users'),
         'mapping_function': map_users
     },
