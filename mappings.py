@@ -3,7 +3,7 @@ from datetime import datetime
 import subprocess  # For calling the PHP script
 
 def call_php_for_hash(password):
-    """ Calls a PHP script to hash the password using Laravel's Hash::make """
+    """Calls a PHP script to hash the password using Laravel's Hash::make"""
     result = subprocess.run(['php', 'php/hash_password.php', password], capture_output=True, text=True)
     return result.stdout.strip()
 
@@ -35,10 +35,9 @@ def map_customers(source_row):
         'other_servicing_offices': source_row.Location,
         'active': source_row.Status,
         'erp_entry_date': erp_entry_date,
-        'payment_types': '[]',  # Provide a default value for payment_types
-        'c_type': '',  # Provide a default value for c_type
-        'primary_servicing_office_id': 1,  # Default value for primary_servicing_office_id
-        # Add other fields as necessary
+        'payment_types': '[]',  # Default value
+        'c_type': '',  # Default value
+        'primary_servicing_office_id': 1,  # Default value
     }
 
 def map_driver_master(source_row):
@@ -67,9 +66,7 @@ def map_offices(source_row):
     }
 
 def map_vehicles(source_row):
-    rc_num = source_row.RCBookNo
-    if not rc_num:  # Check if rc_num is None or empty
-        rc_num = "1"  # Provide a default value for rc_num
+    rc_num = source_row.RCBookNo if source_row.RCBookNo else "1"  # Default value for rc_num
 
     return {
         'rc_num': rc_num,
@@ -110,7 +107,7 @@ def map_station_coverage(source_row):
         'taluka': source_row.Taluka,
         'district': source_row.District or '',
         'district_reg': source_row.DistrictMar,
-        'state': source_row.State if source_row.State else 'Unknown',  # Provide a default value
+        'state': source_row.State if source_row.State else 'Unknown',  # Default value
         'latitude': source_row.Latitude,
         'longitude': source_row.Longitude,
         'route_num': source_row.RouteNo,
@@ -121,20 +118,47 @@ def map_station_coverage(source_row):
     }
 
 def map_users(source_row):
-    max_job_title_length = 32  # Adjust this value based on your schema
+    max_job_title_length = 32  # Adjust based on your schema
     job_title = source_row.Designation[:max_job_title_length]  # Truncate if necessary
+
+    # Handle blank passwords
+ # Hash the password using PHP script
 
     return {
         'name': source_row.FullName,
         'login_id': source_row.Name,
         'mobile': source_row.UserMobile,
         'email': source_row.UserEmail,
-        'password_hash': call_php_for_hash(source_row.Password),  # Hash the password using PHP script
+        'password_hash': source_row.Password,  # Use hashed password or default value
         'profile_pic_url': source_row.imageurl,
         'user_type': 'TENANT',
         'job_title': job_title,  # Use truncated job title
         'active': source_row.ActiveFlag,
     }
+
+
+
+def map_cust_contract_excess_weight_rates(source_row):
+    return {
+        'ctr_num': source_row.ConsignorCode,
+        'lower_limit': source_row.FromWeight,
+        'upper_limit': source_row.ToWeight,
+        'rate': source_row.Rate,
+        'tenant_id': '1',
+        'cust_contract_id': '3',
+    }
+
+
+def map_cust_contract_oda_charges(source_row):
+    return {
+        'ctr_num': source_row.ConsignorCode,
+        'from_place': source_row.FromPlace,
+        'to_place': source_row.ToPlace,
+        'rate': source_row.Rate,
+        'tenant_id': '1',
+        'cust_contract_id': '3',
+    }
+
 
 TABLE_MAPPINGS = {
     'Customers': {
@@ -164,6 +188,14 @@ TABLE_MAPPINGS = {
     'users': {
         'target_table': get_table(target_engine, 'users'),
         'mapping_function': map_users
+    },
+     'ExcessWeight': {
+        'target_table': get_table(target_engine, 'cust_contract_excess_weight_rates'),
+        'mapping_function': map_cust_contract_excess_weight_rates
+    },
+      'Doordeliverycontract': {
+        'target_table': get_table(target_engine, 'cust_contract_oda_charges'),
+        'mapping_function': map_cust_contract_oda_charges
     },
     # Add other table mappings here
 }

@@ -19,5 +19,7 @@ python cli.py migrate --table Customers
 python cli.py migrate --table all
 #### l Check
 pip list
+#### Prtiqular file 
+python migrate_contracts.py
 
 
